@@ -1,2 +1,2 @@
 ```
-ql repo https://github.com/Chat240515/wskey.git "wskey"
+ql repo https://github.com/Chat240515/ws.git "wskey"
