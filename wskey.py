@@ -41,7 +41,7 @@ def randomuserAgent():
     UserAgent=f'jdapp;iPhone;10.0.4;{iosVer};{uuid};network/wifi;ADID/{ADID};model/iPhone{iPhone},1;addressid/{addressid};appBuild/167707;jdSupportDarkMode/0;Mozilla/5.0 (iPhone; CPU iPhone OS {iosV} like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/null;supportJDSHWK/1'
 
 
-def get_proxy_api(proxy_url, max_retries=10, timeout=60, retry_delay=5):
+def get_proxy_api(proxy_url, max_retries=15, timeout=90, retry_delay=10):
     session = requests.Session()
     for retry in range(max_retries):
         if '@' in proxy_url:
