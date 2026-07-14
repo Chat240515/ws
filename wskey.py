@@ -22,6 +22,7 @@ by:lonesomexz
 """
 hadsend = True
 UserAgent = ""
+api_base = "/api"
 
 
 def printf(text):
@@ -255,7 +256,7 @@ def getcookie_wskey(key):
                 token_json = {}
             token = token_json.get('tokenKey', 'xxx')
         except Exception as error:
-            printf(f"【警告】{unquote(pin)}第{num + 1}次请求token异常，5秒后重试：\n{error}\n{traceback.format_exc()}")
+            printf(f"【警告】{unquote(pin)}第{num + 1}次请求token异常，5秒后重试：{error}")
             token = "xxx"
         if token != "xxx":
             break
@@ -337,7 +338,7 @@ def subcookie(pt_pin, cookie, token):
         strptpin = pt_pin
         if re.search('%', strptpin):
             strptpin = unquote(strptpin, 'utf-8')
-        url = 'http://127.0.0.1:5600/api/envs'
+        url = f'http://127.0.0.1:5600{api_base}/envs'
         headers = {'Authorization': f'Bearer {token}'}
         body = {
             'searchValue': pt_pin,
@@ -366,7 +367,7 @@ def subcookie(pt_pin, cookie, token):
                     strptpin = strptpin + "(" + reamrk.split("@@")[0] + ")"
         if old:
             put(url, json=body, headers=headers)
-            url = 'http://127.0.0.1:5600/api/envs/enable'
+            url = f'http://127.0.0.1:5600{api_base}/envs/enable'
             if isline:
                 body = [body['_id']]
             else:
@@ -386,7 +387,7 @@ def getRemark(pt_pin, token):
     else:
         strreturn = pt_pin
     if token != "":
-        url = 'http://127.0.0.1:5600/api/envs'
+        url = f'http://127.0.0.1:5600{api_base}/envs'
         headers = {'Authorization': f'Bearer {token}'}
         body = {
             'searchValue': pt_pin,
@@ -479,14 +480,25 @@ def main():
                 auth = file.read()
                 auth = json.loads(auth)
                 token = auth["token"]
-        url = 'http://127.0.0.1:5600/api/envs'
+        global api_base
+        url = f'http://127.0.0.1:5600{api_base}/envs'
         headers = {'Authorization': f'Bearer {token}'}
-        body = {
-            'searchValue': 'JD_WSCK',
-            'Authorization': f'Bearer {token}'
-        }
+        body = {'searchValue': 'JD_WSCK'}
+        
+        req_res = get(url, params=body, headers=headers)
+        if req_res.status_code == 401 and os.environ.get("QL_CLIENT_ID"):
+            printf("auth.json的Token已失效(401)，正在无缝切换OpenAPI...")
+            api_base = "/open"
+            client_id = os.environ.get("QL_CLIENT_ID")
+            client_secret = os.environ.get("QL_CLIENT_SECRET")
+            auth_url = f"http://127.0.0.1:5600/open/auth/token?client_id={client_id}&client_secret={client_secret}"
+            token = get(auth_url).json().get("data", {}).get("token", "")
+            headers['Authorization'] = f'Bearer {token}'
+            url = f'http://127.0.0.1:5600{api_base}/envs'
+            req_res = get(url, params=body, headers=headers)
+
         try:
-            datas = get(url, params=body, headers=headers).json()['data']
+            datas = req_res.json()['data']
         except Exception as e:
             printf(f"获取JD_WSCK失败: {e}")
             datas = []
@@ -523,7 +535,7 @@ def main():
                 if isinstance(cookie, str) and "fake_" in cookie:
                     message = f"{newpin}的wskey过期了！"
                     printf(message)
-                    url = 'http://127.0.0.1:5600/api/envs/disable'
+                    url = f'http://127.0.0.1:5600{api_base}/envs/disable'
                     try:
                         body = [data['_id']]
                     except:
